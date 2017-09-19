@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <title>Create input</title>
+    <style type="text/css"></style>
+</head>
+<body>
+<div>
+<span style="margin-left:25px;">for</span> <img src="unity-logo.png" height="80px" title="Unity logo. No affiliations with the maker of this webpage." >
+<br>
+<h1 style="font-size: 30px; margin: 0px; margin-left: 20px;">InputManager.asset generator by Koen Griffioen</h1>
+</div>
+<ul class="list-group">
+  <li class="list-group-item">Select Number of controllers:
+  <select id="controllerNumSelect">
+    
+  </select>
+  <li class="list-group-item"><input type="checkbox" id="keyboardCheck"> First player is only steerable by keyboard (extra controller)</li>
+  <li class="list-group-item">
+
+  <button onclick="toggleKeymap()" class="btn btn-default">Show/hide key mapping</button>
+  <button class="btn btn-default" type="submit" onclick="generate()">Generate!</button>
+  <button class="btn btn-default" onclick="download('InputManager.asset')">Download generated InputManager.asset</button>
+  <div id="keyMap" style="display: none;">
+  <pre><code>
+  Joystick Key mapping:
+  AXES:
+    Horizontal[joyNum]
+    Vertical[joyNum]
+    TAxis[joyNum] {RT and LT are one axis}
+    RSHorizontal[joyNum] {Right Stick}
+    RSVertical[joyNum] {Right Stick}
+    KPHorizontal[joyNum] {KeyPad [Square thingy]}
+    KPVertical[joyNum] {KeyPad [Square thingy]}
+  BUTTONS:
+    AButton[joyNum]
+    BButton[joyNum]
+    XButton[joyNum]
+    YButton[joyNum]
+    LBButton[joyNum]
+    RBButton[joyNum]
+    BackButton[joyNum]
+    StartButton[joyNum]
+    LSClick[joyNum] {Left Stick Click}
+    RSClick[joyNum] {Right Stick Click}
+    </code></pre>
+    </div>
+  </li>
+  <li class="list-group-item">
+    InputManager.asset:
+    <pre><code id="codeOutput">
+      
+    </code></pre>
+  </li>
+</ul>
+<script type="text/javascript">
+// self executing function here
+(function() {
+   // your page initialization code here
+   // the DOM will be available here
+   maxControllers = 8;
+   var controllerSelect = document.getElementById("controllerNumSelect");
+   for (var i = 1; i <= maxControllers; i++) {    
+        controllerSelect.insertAdjacentHTML('beforeend', '<option value="' + i + '">' + i + '</option>');
+   }
+})();    
+
+function generate(){
+  // Get number selection  
+  var controllerSelect = document.getElementById("controllerNumSelect");
+  // Get keyboard check
+  var keyboardInput = document.getElementById("keyboardCheck");
+  // Get code block div to append to
+  var codeOutput = document.getElementById("codeOutput");
+  codeOutput.innerHTML = "";
+  var fileStart = 
+"%YAML 1.1\n\
+%TAG !u! tag:unity3d.com,2011:\n\
+--- !u!13 &1\n\
+InputManager:\n\
+  m_ObjectHideFlags: 0\n\
+  serializedVersion: 2\n\
+  m_Axes:\n";
+  // Get keylist
+  var keyList = GetKeyList();
+  // Append fileStart
+  codeOutput.innerHTML += fileStart;
+  // 
+
+  var controllerIndex = 1;
+  var joystickIndex = 1;
+
+  for (var i = 0; i < keyList.keyboard.length; i++) {
+    codeOutput.innerHTML += CreateAxis(keyList.keyboard[i], controllerIndex, joystickIndex);
+  }
+  if(keyboardInput.checked){
+    controllerIndex++;
+  }
+
+  var controllerNum = controllerSelect.value;
+  for(var j = 1; j <= controllerNum; j++){
+    for (var i = 0; i < keyList.joystick.length; i++) {
+      codeOutput.innerHTML += CreateAxis(keyList.joystick[i], controllerIndex, joystickIndex);
+    }
+    joystickIndex++;
+    controllerIndex++;
+  }
+       
+}
+
+function CreateAxis(keyset, joyNum, joyIndex){
+  var keyset = JSON.parse(JSON.stringify(keyset));
+  if(keyset.type == "ka"){
+    keyset.gravity = 3;
+    keyset.dead = 0.001;
+    keyset.sensitivity = 3;
+    keyset.snap = 1;
+    keyset.type = 0;
+  }
+  else if(keyset.type == "kb" || keyset.type == "jb"){
+    if(keyset.type == "jb")
+      keyset.positiveButton = "joystick " + joyIndex + " button " + keyset.positiveButton;
+    keyset.gravity = 1000;
+    keyset.dead = 0.001;
+    keyset.sensitivity = 1000;
+    keyset.snap = 0;
+    keyset.type = 0;
+  }
+  else if(keyset.type == "ja"){
+    keyset.gravity = 0;
+    keyset.dead = 0.19;
+    keyset.sensitivity = 1;
+    keyset.snap = 0;
+    keyset.type = 2;
+  }
+  keyset.invert = keyset.invert ? keyset.invert : 0;
+  keyset.axis = keyset.axis ? keyset.axis : 0;
+  keyset.joyNum = joyIndex ? joyIndex : 0;
+  keyset.negativeButton = keyset.negativeButton ? keyset.negativeButton : "";
+  keyset.positiveButton = keyset.positiveButton ? keyset.positiveButton : "";
+  keyset.altNegativeButton = keyset.altNegativeButton ? keyset.altNegativeButton : "";
+  keyset.altPositiveButton = keyset.altPositiveButton ? keyset.altPositiveButton : "";
+
+      // - serializedVersion: 3
+    // m_Name: Horizontal
+    // descriptiveName: 
+    // descriptiveNegativeName: 
+    // negativeButton: 
+    // positiveButton: 
+    // altNegativeButton: 
+    // altPositiveButton: 
+    // gravity: 0
+    // dead: 0.19
+    // sensitivity: 1
+    // snap: 0
+    // invert: 0
+    // type: 2
+    // axis: 0
+    // joyNum: 0
+
+  string = "";
+  string += "  - serializedVersion: 3\n";
+  string += "    m_Name: " + keyset.name + joyNum + "\n";
+  string += "    descriptiveName: \n";
+  string += "    descriptiveNegativeName: \n";
+  string += "    negativeButton: " + keyset.negativeButton + "\n";
+  string += "    positiveButton: " + keyset.positiveButton + "\n";
+  string += "    altNegativeButton: " + keyset.altNegativeButton + "\n";
+  string += "    altPositiveButton: " + keyset.altPositiveButton + "\n";
+  string += "    gravity: " + keyset.gravity + "\n";
+  string += "    dead: " + keyset.dead + "\n";
+  string += "    sensitivity: " + keyset.sensitivity + "\n";
+  string += "    snap: " + keyset.snap + "\n";
+  string += "    invert: " + keyset.invert + "\n";
+  string += "    type: " + keyset.type + "\n";
+  string += "    axis: " + keyset.axis + "\n";
+  string += "    joyNum: " + keyset.joyNum + "\n";
+  return string;
+}
+
+function GetKeyList(){
+
+  /* EXAMPLE OF KEYBOARD AXIS */
+    // - serializedVersion: 3
+    // m_Name: Horizontal
+    // descriptiveName: 
+    // descriptiveNegativeName: 
+    // negativeButton: left
+    // positiveButton: right
+    // altNegativeButton: a
+    // altPositiveButton: d
+    // gravity: 3
+    // dead: 0.001
+    // sensitivity: 3
+    // snap: 1
+    // invert: 0
+    // type: 0
+    // axis: 0
+    // joyNum: 0
+
+  /* EXAMPLE OF KEYBOARD BUTTON */
+    // - serializedVersion: 3
+    // m_Name: Jump
+    // descriptiveName: 
+    // descriptiveNegativeName: 
+    // negativeButton: 
+    // positiveButton: space
+    // altNegativeButton: 
+    // altPositiveButton: 
+    // gravity: 1000
+    // dead: 0.001
+    // sensitivity: 1000
+    // snap: 0
+    // invert: 0
+    // type: 0
+    // axis: 0
+    // joyNum: 0
+
+  /* EXAMPLE OF JOYSTICK AXIS */
+      // - serializedVersion: 3
+    // m_Name: Horizontal
+    // descriptiveName: 
+    // descriptiveNegativeName: 
+    // negativeButton: 
+    // positiveButton: 
+    // altNegativeButton: 
+    // altPositiveButton: 
+    // gravity: 0
+    // dead: 0.19
+    // sensitivity: 1
+    // snap: 0
+    // invert: 0
+    // type: 2
+    // axis: 0
+    // joyNum: 0
+
+
+
+  /* TYPES OF INPUT: */
+  // - ka -> keyboard axis
+  // - ja -> joystick axis
+  // - kb -> keyboard button
+  // - jb -> joystick button
+
+  /* Key mapping: */
+  // AXES:
+    // Horizontal[joyNum]
+    // Vertical[joyNum]
+    // TAxis[joyNum] {RT and LT are one axis}
+    // RSHorizontal[joyNum] {Right Stick}
+    // RSVertical[joyNum] {Right Stick}
+    // KPHorizontal[joyNum] {KeyPad [Square thingy]}
+    // KPVertical[joyNum] {KeyPad [Square thingy]}
+  // BUTTONS:
+    // AButton[joyNum]
+    // BButton[joyNum]
+    // XButton[joyNum]
+    // YButton[joyNum]
+    // LBButton[joyNum]
+    // RBButton[joyNum]
+    // BackButton[joyNum]
+    // StartButton[joyNum]
+    // LSClick[joyNum] {Left Stick Click}
+    // RSClick[joyNum] {Right Stick Click}
+
+
+    var keyList = 
+       {
+         keyboard:[
+          {
+               name:"Horizontal",
+               negativeButton:"left",
+               positiveButton:"right",
+               altNegativeButton:"a",
+               altPositiveButton:"d",
+               type:"ka"
+           },
+          {
+               name:"Vertical",
+               negativeButton:"down",
+               positiveButton:"up",
+               altNegativeButton:"s",
+               altPositiveButton:"w",
+               type:"ka"
+           },
+          {
+               name:"BButton",
+               positiveButton:"escape",
+               altPositiveButton:"space",
+               type:"kb"
+           },
+          {
+               name:"AButton",
+               positiveButton:"left ctrl",
+               altPositiveButton:"return",
+               type:"kb"
+           }
+
+           ],
+        joystick:[
+          {
+               name:"Horizontal",
+               type:"ja",
+               axis:0
+           },
+          {
+               name:"Vertical",
+               type:"ja",
+               invert: 1,
+               axis: 1
+           },
+          {
+               name:"TAxis",
+               type:"ja",
+               invert:1,
+               axis: 2
+           },
+          {
+               name:"RSHorizontal",
+               type:"ja",
+               axis: 3
+           },
+          {
+               name:"RSVertical",
+               type:"ja",
+               axis: 4
+           },
+          {
+               name:"KPHorizontal",
+               type:"ja",
+               axis: 5
+           },
+          {
+               name:"KPVertical",
+               type:"ja",
+               axis: 6
+           }, 
+           // Buttons begin
+          {
+               name:"AButton",
+               positiveButton:0,
+               type:"jb"
+           }, 
+          {
+               name:"BButton",
+               positiveButton:1,
+               type:"jb"
+           }, 
+          {
+               name:"XButton",
+               positiveButton:2,
+               type:"jb"
+           }, 
+          {
+               name:"YButton",
+               positiveButton:3,
+               type:"jb"
+           }, 
+          {
+               name:"LBButton",
+               positiveButton:4,
+               type:"jb"
+           }, 
+          {
+               name:"RBButton",
+               positiveButton:5,
+               type:"jb"
+           }, 
+          {
+               name:"BackButton",
+               positiveButton:6,
+               type:"jb"
+           }, 
+          {
+               name:"StartButton",
+               positiveButton:7,
+               type:"jb"
+           }, 
+          {
+               name:"LSClick",
+               positiveButton:8,
+               type:"jb"
+           }, 
+          {
+               name:"RSClick",
+               positiveButton:9,
+               type:"jb"
+           }
+           ]
+       }
+
+       return keyList;
+}
+
+function download(filename) {
+  var text = document.getElementById("codeOutput").innerHTML.replace(/&amp;/g, '&');
+  var element = document.createElement('a');
+  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+  element.setAttribute('download', filename);
+
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+}
+
+function toggleKeymap(){
+  var kmdiv = document.getElementById("keyMap");
+  if(kmdiv.style.display == "none"){
+    kmdiv.style.display = "inline";
+  }
+  else{
+    kmdiv.style.display = "none"; 
+  }
+}
+
+generate();
+</script>
+</body>
+</html>
